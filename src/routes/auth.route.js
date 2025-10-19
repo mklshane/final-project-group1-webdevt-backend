@@ -6,9 +6,10 @@ import {
   logout,
   patientLogin,
   patientRegister,
+  verifyAuth
 } from "../controller/auth.controller.js";
-import verifyToken from "../middleware/verifyToken.js";
 import authorizeRoles from "../middleware/authorizeRoles.js";
+import verifyToken from "../middleware/verifyToken.js";
 
 const router = express.Router();
 
@@ -196,5 +197,20 @@ router.post("/patient/login", patientLogin);
  *         description: Logged out successfully
  */
 router.post("/logout", logout);
+
+/**
+ * @swagger
+ * /api/auth/verify:
+ *   post:
+ *     summary: Verify token
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Token is valid
+ *       401:
+ *         description: Token expired/invalid
+ */
+
+router.get("/verify", verifyAuth)
 
 export default router;

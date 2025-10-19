@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import Doctor from "../models/doctor.model.js";
 import Patient from "../models/patient.model.js";
 import generateTokenAndSetCookie from "../utils/generateTokenAndSetCookie.js";
+import jwt from "jsonwebtoken";
 
 dotenv.config();
 
@@ -204,5 +205,69 @@ export const logout = (req, res) => {
   } catch (error) {
     console.error("Logout error:", error);
     return res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const verifyAuth = async (req, res) => {
+  try {
+    const token = req.cookies.token;
+
+    if (!token) {
+      return res.status(401).json({
+        message: "No token provided",
+        authenticated: false,
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    let userData;
+
+    // fetch user data based on role
+    if (decoded.role === "patient") {
+      userData = await Patient.findById(decoded.id).select("-password");
+    } else if (decoded.role === "doctor") {
+      userData = await Doctor.findById(decoded.id).select("-password");
+    } else if (decoded.role === "admin") {
+      userData = {
+        role: "admin",
+        email: decoded.email,
+      };
+    }
+
+    if (!userData) {
+      return res.status(404).json({
+        message: "User not found",
+        authenticated: false,
+      });
+    }
+
+    res.status(200).json({
+      authenticated: true,
+      user: userData,
+      userType: decoded.role,
+      message: "Token is valid",
+    });
+  } catch (error) {
+    console.error("Token verification error:", error);
+
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        message: "Invalid token",
+        authenticated: false,
+      });
+    }
+
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        message: "Token expired",
+        authenticated: false,
+      });
+    }
+
+    res.status(500).json({
+      message: "Server error during token verification",
+      authenticated: false,
+    });
   }
 };
