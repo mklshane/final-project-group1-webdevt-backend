@@ -62,8 +62,8 @@ export const createAppointment = async (req,res) => {
 
 export const getAppointment = async (req, res) => {
   try {
-    const userRole = req.user?.role; 
-    const userId = req.user?.id; 
+    const userRole = req.user?.role;
+    const userId = req.user?.id;
 
     if (!userRole || !userId) {
       return res.status(403).json({ message: "Unauthorized" });
@@ -90,11 +90,26 @@ export const getAppointment = async (req, res) => {
       appointments = await Appointment.find({ patient: userId })
         .populate("doctor", "name email specialization")
         .populate("patient", "name email contact");
-    }
-
-    else {
+    } else {
       return res.status(403).json({ message: "Invalid role" });
     }
+
+    // auto-update past "Scheduled" appointments to "Completed"
+    const now = new Date();
+    const updates = [];
+
+    for (const appointment of appointments) {
+      const appointmentDateTime = new Date(
+        `${appointment.appointment_date}T${appointment.appointment_time}`
+      );
+
+      if (appointment.status === "Scheduled" && appointmentDateTime < now) {
+        appointment.status = "Completed";
+        updates.push(appointment.save());
+      }
+    }
+
+    if (updates.length > 0) await Promise.all(updates);
 
     return res.status(200).json({ appointments });
   } catch (error) {
@@ -102,6 +117,9 @@ export const getAppointment = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+
+
 export const updateAppointment = async (req, res) => {
   try {
     const { id } = req.params;
