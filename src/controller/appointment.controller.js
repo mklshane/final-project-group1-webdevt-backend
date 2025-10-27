@@ -102,7 +102,6 @@ export const getAppointment = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-
 export const updateAppointment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -110,17 +109,21 @@ export const updateAppointment = async (req, res) => {
     const userId = req.user?.id;
     const { status, appointment_date, appointment_time } = req.body;
 
+    // Find the appointment
     const appointment = await Appointment.findById(id);
     if (!appointment) {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
+    // 🧍‍♀️ PATIENT LOGIC
     if (userRole === "patient") {
       if (appointment.patient.toString() !== userId) {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      if (status === "Cancelled") {
+      const normalizedStatus = status?.trim().toLowerCase();
+
+      if (normalizedStatus === "cancelled") {
         appointment.status = "Cancelled";
       } else if (appointment_date || appointment_time) {
         appointment.appointment_date =
@@ -133,21 +136,24 @@ export const updateAppointment = async (req, res) => {
       }
     }
 
+    // 🩺 DOCTOR LOGIC
     if (userRole === "doctor") {
       if (appointment.doctor.toString() !== userId) {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      if (status === "Accepted") {
+      const normalizedStatus = status?.trim().toLowerCase();
+
+      if (normalizedStatus === "scheduled" || normalizedStatus === "accepted") {
         appointment.status = "Scheduled";
-      } else if (status === "Rejected") {
+      } else if (normalizedStatus === "rejected") {
         appointment.status = "Rejected";
-      } else if (status === "Completed") {
+      } else if (normalizedStatus === "completed") {
         appointment.status = "Completed";
       } else {
         return res.status(400).json({
           message:
-            "Doctors can only update status to Accepted(Scheduled), Rejected, or Completed",
+            "Doctors can only update status to Scheduled (Accepted), Rejected, or Completed",
         });
       }
     }
