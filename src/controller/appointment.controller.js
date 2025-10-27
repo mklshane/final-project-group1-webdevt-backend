@@ -18,7 +18,7 @@ export const createAppointment = async (req,res) => {
         });
       }
 
-      const doctor = await Doctor.findById(id);
+      const doctor = await Doctor.findById(doctor_id);
       if (!doctor) {
         return res.status(404).json({ message: "Doctor not found" });
       }
