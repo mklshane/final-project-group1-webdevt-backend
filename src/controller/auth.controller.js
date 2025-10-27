@@ -22,7 +22,7 @@ export const adminLogin = async (req, res) => {
       email === process.env.ADMIN_EMAIL &&
       password === process.env.ADMIN_PASSWORD
     ) {
-      generateTokenAndSetCookie({ role: "admin", email }, res);
+      generateTokenAndSetCookie({ id: "admin", role: "admin", email }, res);
       return res.status(200).json({ message: "Successfully logged in." });
     }
 

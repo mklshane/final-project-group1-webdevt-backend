@@ -62,8 +62,8 @@ export const createAppointment = async (req,res) => {
 
 export const getAppointment = async (req, res) => {
   try {
-    const userRole = req.user?.role; 
-    const userId = req.user?.id; 
+    const userRole = req.user?.role;
+    const userId = req.user?.id;
 
     if (!userRole || !userId) {
       return res.status(403).json({ message: "Unauthorized" });
@@ -90,11 +90,26 @@ export const getAppointment = async (req, res) => {
       appointments = await Appointment.find({ patient: userId })
         .populate("doctor", "name email specialization")
         .populate("patient", "name email contact");
-    }
-
-    else {
+    } else {
       return res.status(403).json({ message: "Invalid role" });
     }
+
+    // auto-update past "Scheduled" appointments to "Completed"
+    const now = new Date();
+    const updates = [];
+
+    for (const appointment of appointments) {
+      const appointmentDateTime = new Date(
+        `${appointment.appointment_date}T${appointment.appointment_time}`
+      );
+
+      if (appointment.status === "Scheduled" && appointmentDateTime < now) {
+        appointment.status = "Completed";
+        updates.push(appointment.save());
+      }
+    }
+
+    if (updates.length > 0) await Promise.all(updates);
 
     return res.status(200).json({ appointments });
   } catch (error) {
@@ -103,6 +118,8 @@ export const getAppointment = async (req, res) => {
   }
 };
 
+
+
 export const updateAppointment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -110,17 +127,21 @@ export const updateAppointment = async (req, res) => {
     const userId = req.user?.id;
     const { status, appointment_date, appointment_time } = req.body;
 
+    // Find the appointment
     const appointment = await Appointment.findById(id);
     if (!appointment) {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
+    // 🧍‍♀️ PATIENT LOGIC
     if (userRole === "patient") {
       if (appointment.patient.toString() !== userId) {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      if (status === "Cancelled") {
+      const normalizedStatus = status?.trim().toLowerCase();
+
+      if (normalizedStatus === "cancelled") {
         appointment.status = "Cancelled";
       } else if (appointment_date || appointment_time) {
         appointment.appointment_date =
@@ -133,21 +154,24 @@ export const updateAppointment = async (req, res) => {
       }
     }
 
+    // 🩺 DOCTOR LOGIC
     if (userRole === "doctor") {
       if (appointment.doctor.toString() !== userId) {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      if (status === "Accepted") {
+      const normalizedStatus = status?.trim().toLowerCase();
+
+      if (normalizedStatus === "scheduled" || normalizedStatus === "accepted") {
         appointment.status = "Scheduled";
-      } else if (status === "Rejected") {
+      } else if (normalizedStatus === "rejected") {
         appointment.status = "Rejected";
-      } else if (status === "Completed") {
+      } else if (normalizedStatus === "completed") {
         appointment.status = "Completed";
       } else {
         return res.status(400).json({
           message:
-            "Doctors can only update status to Accepted(Scheduled), Rejected, or Completed",
+            "Doctors can only update status to Scheduled (Accepted), Rejected, or Completed",
         });
       }
     }
