@@ -19,9 +19,10 @@ export const adminLogin = async (req, res) => {
     }
 
     if (
-      email === process.env.ADMIN_EMAIL || "admin@hms.com" &&
-      password === process.env.ADMIN_PASSWORD || "supersecret123"
-    ) {
+  (email === process.env.ADMIN_EMAIL) ||
+  ("admin@hms.com" && password === process.env.ADMIN_PASSWORD) ||
+  "supersecret123"
+) {
       generateTokenAndSetCookie({ id: "admin", role: "admin", email }, res);
       return res.status(200).json({ message: "Successfully logged in." });
     }
