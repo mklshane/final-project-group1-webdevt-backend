@@ -24,7 +24,10 @@ export const adminLogin = async (req, res) => {
   "supersecret123"
 ) {
       generateTokenAndSetCookie({ id: "admin", role: "admin", email }, res);
-      return res.status(200).json({ message: "Successfully logged in." });
+      return res.status(200).json({
+  message: "Successfully logged in.",
+  user: { id: "admin", role: "admin", email },
+});
     }
 
     return res.status(401).json({
@@ -112,7 +115,7 @@ export const doctorLogin = async (req, res) => {
 
     res.status(200).json({
       message: "Doctor logged in successfully",
-      doctor: doctorData,
+      user: doctorData,
     });
   } catch (error) {
     console.error("Doctor login error:", error);
