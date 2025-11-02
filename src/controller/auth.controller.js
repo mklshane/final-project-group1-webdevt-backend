@@ -232,11 +232,13 @@ export const verifyAuth = async (req, res) => {
       userData = await Patient.findById(decoded.id).select("-password");
     } else if (decoded.role === "doctor") {
       userData = await Doctor.findById(decoded.id).select("-password");
-    } else if (decoded.role === "admin") {
-      userData = {
-        role: "admin",
-        email: decoded.email,
-      };
+    } else // In verifyAuth controller
+if (decoded.role === "admin") {
+  userData = {
+    _id: "admin",
+    email: decoded.email,
+    role: "admin",
+  };
     }
 
     if (!userData) {
