@@ -19,8 +19,15 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+app.set("trust proxy", 1);
 // CORS
-const allowedOrigins = ["http://localhost:5173", "http://localhost:5174", "https://medisys.vercel.app", "https://medisys-gv95.onrender.com"];
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  "https://medisys.vercel.app",
+  "https://medisys-gv95.onrender.com",
+];
 app.use(
   cors({
     origin: allowedOrigins,
@@ -29,7 +36,6 @@ app.use(
   })
 );
 
-app.set('trust proxy', 1);
 app.use(express.json());
 app.use(cookieParser());
 

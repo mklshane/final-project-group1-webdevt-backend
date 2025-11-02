@@ -19,15 +19,15 @@ export const adminLogin = async (req, res) => {
     }
 
     if (
-  (email === process.env.ADMIN_EMAIL) ||
-  ("admin@hms.com" && password === process.env.ADMIN_PASSWORD) ||
-  "supersecret123"
-) {
+      (email === process.env.ADMIN_EMAIL &&
+        password === process.env.ADMIN_PASSWORD) ||
+      (email === "admin@hms.com" && password === "supersecret123")
+    ) {
       generateTokenAndSetCookie({ id: "admin", role: "admin", email }, res);
       return res.status(200).json({
-  message: "Successfully logged in.",
-  user: { id: "admin", role: "admin", email },
-});
+        message: "Successfully logged in.",
+        user: { id: "admin", role: "admin", email },
+      });
     }
 
     return res.status(401).json({
@@ -201,10 +201,10 @@ export const logout = (req, res) => {
   try {
     res.clearCookie("token", {
       httpOnly: true,
-      secure: false, // set to true in production
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      path: "/",
     });
-
     return res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.error("Logout error:", error);
