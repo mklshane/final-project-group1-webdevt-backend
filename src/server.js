@@ -20,7 +20,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // CORS
-const allowedOrigins = ["http://localhost:5173", "http://localhost:5174", "medisys.vercel.app"];
+const allowedOrigins = ["http://localhost:5173", "http://localhost:5174", "https://medisys.vercel.app"];
 app.use(
   cors({
     origin: allowedOrigins,
