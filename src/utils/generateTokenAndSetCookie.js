@@ -7,13 +7,15 @@ const generateTokenAndSetCookie = (userData, res) => {
     expiresIn: "7d",
   });
 
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // true in prod, false in dev
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // critical!
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: "/", // ensure cookie is sent to all routes
-  });
+  // utils/generateTokenAndSetCookie.js
+res.cookie("token", token, {
+  httpOnly: true,
+  secure: true,                    // REQUIRED in production
+  sameSite: "none",                // REQUIRED for cross-site (frontend ≠ backend domain)
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: "/",
+  domain: ".onrender.com",         // Critical: share cookie across subdomains
+});
 
   return token;
 };
