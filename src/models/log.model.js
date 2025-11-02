@@ -11,12 +11,12 @@ const logSchema = new mongoose.Schema(
     metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      refPath: "createdByModel", // ← Dynamic ref
+      refPath: "createdByModel", 
       required: false,
     },
     createdByModel: {
       type: String,
-      enum: ["Doctor", "Patient", "Admin"], // ← Admin is virtual
+      enum: ["Doctor", "Patient", "Admin"],
       required: false,
     },
     createdByName: {

@@ -1,4 +1,3 @@
-// routes/log.route.js
 import express from "express";
 import { getLogs } from "../controller/log.controller.js";
 import verifyToken from "../middleware/verifyToken.js";
