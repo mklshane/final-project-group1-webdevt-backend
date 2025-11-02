@@ -1,12 +1,9 @@
-import mongoose from "mongoose";
-import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import Doctor from "../models/doctor.model.js";
 import Patient from "../models/patient.model.js";
-import generateTokenAndSetCookie from "../utils/generateTokenAndSetCookie.js";
-import jwt from "jsonwebtoken";
 
-dotenv.config();
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export const adminLogin = async (req, res) => {
   try {
@@ -18,20 +15,23 @@ export const adminLogin = async (req, res) => {
         .json({ message: "Email and Password are required." });
     }
 
-    if (
+    const isValid =
       (email === process.env.ADMIN_EMAIL &&
         password === process.env.ADMIN_PASSWORD) ||
-      (email === "admin@hms.com" && password === "supersecret123")
-    ) {
-      generateTokenAndSetCookie({ id: "admin", role: "admin", email }, res);
-      return res.status(200).json({
-        message: "Successfully logged in.",
-        user: { id: "admin", role: "admin", email },
-      });
+      (email === "admin@hms.com" && password === "supersecret123");
+
+    if (!isValid) {
+      return res.status(401).json({ message: "Invalid admin credentials" });
     }
 
-    return res.status(401).json({
-      message: "Invalid admin credentials",
+    const token = jwt.sign({ id: "admin", email, role: "admin" }, JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    res.status(200).json({
+      message: "Successfully logged in.",
+      user: { _id: "admin", email, role: "admin" },
+      token,
     });
   } catch (error) {
     console.error("Admin login error:", error);
@@ -59,7 +59,6 @@ export const doctorRegister = async (req, res) => {
     }
 
     const doctorAlreadyExists = await Doctor.findOne({ email });
-
     if (doctorAlreadyExists) {
       return res.status(400).json({ message: "Doctor already exists." });
     }
@@ -106,9 +105,10 @@ export const doctorLogin = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    generateTokenAndSetCookie(
+    const token = jwt.sign(
       { id: doctor._id, email: doctor.email, role: "doctor" },
-      res
+      JWT_SECRET,
+      { expiresIn: "7d" }
     );
 
     const { password: _, ...doctorData } = doctor._doc;
@@ -116,6 +116,7 @@ export const doctorLogin = async (req, res) => {
     res.status(200).json({
       message: "Doctor logged in successfully",
       user: doctorData,
+      token,
     });
   } catch (error) {
     console.error("Doctor login error:", error);
@@ -134,7 +135,6 @@ export const patientRegister = async (req, res) => {
     }
 
     const userAlreadyExists = await Patient.findOne({ email });
-
     if (userAlreadyExists) {
       return res.status(400).json({ message: "User already exists." });
     }
@@ -180,9 +180,10 @@ export const patientLogin = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    generateTokenAndSetCookie(
+    const token = jwt.sign(
       { id: user._id, email: user.email, role: "patient" },
-      res
+      JWT_SECRET,
+      { expiresIn: "7d" }
     );
 
     const { password: _, ...patientData } = user._doc;
@@ -190,6 +191,7 @@ export const patientLogin = async (req, res) => {
     res.status(200).json({
       message: "User logged in successfully",
       user: patientData,
+      token,
     });
   } catch (error) {
     console.error("Patient login error:", error);
@@ -198,54 +200,34 @@ export const patientLogin = async (req, res) => {
 };
 
 export const logout = (req, res) => {
-  try {
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      path: "/",
-    });
-    return res.status(200).json({ message: "Logged out successfully" });
-  } catch (error) {
-    console.error("Logout error:", error);
-    return res.status(500).json({ message: "Server error" });
-  }
+  res.status(200).json({ message: "Logged out successfully" });
 };
 
 export const verifyAuth = async (req, res) => {
   try {
-    const token = req.cookies.token;
-
-    if (!token) {
-      return res.status(401).json({
-        message: "No token provided",
-        authenticated: false,
-      });
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res
+        .status(401)
+        .json({ message: "No token", authenticated: false });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     let userData;
-
-    // fetch user data based on role
     if (decoded.role === "patient") {
       userData = await Patient.findById(decoded.id).select("-password");
     } else if (decoded.role === "doctor") {
       userData = await Doctor.findById(decoded.id).select("-password");
-    } else // In verifyAuth controller
-if (decoded.role === "admin") {
-  userData = {
-    _id: "admin",
-    email: decoded.email,
-    role: "admin",
-  };
+    } else if (decoded.role === "admin") {
+      userData = { _id: "admin", email: decoded.email, role: "admin" };
     }
 
     if (!userData) {
-      return res.status(404).json({
-        message: "User not found",
-        authenticated: false,
-      });
+      return res
+        .status(404)
+        .json({ message: "User not found", authenticated: false });
     }
 
     res.status(200).json({
@@ -256,24 +238,16 @@ if (decoded.role === "admin") {
     });
   } catch (error) {
     console.error("Token verification error:", error);
-
     if (error.name === "JsonWebTokenError") {
-      return res.status(401).json({
-        message: "Invalid token",
-        authenticated: false,
-      });
+      return res
+        .status(401)
+        .json({ message: "Invalid token", authenticated: false });
     }
-
     if (error.name === "TokenExpiredError") {
-      return res.status(401).json({
-        message: "Token expired",
-        authenticated: false,
-      });
+      return res
+        .status(401)
+        .json({ message: "Token expired", authenticated: false });
     }
-
-    res.status(500).json({
-      message: "Server error during token verification",
-      authenticated: false,
-    });
+    res.status(500).json({ message: "Server error", authenticated: false });
   }
 };
