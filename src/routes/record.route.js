@@ -1,9 +1,16 @@
 import express from "express";
 import verifyToken from "../middleware/verifyToken.js";
 import authorizeRoles from "../middleware/authorizeRoles.js";
-import { addRecord, getRecords } from "../controller/record.controller.js";
+import { addRecord, getRecords, getDoctorRecords } from "../controller/record.controller.js";
 
-const router = express.Router();
+const router = express.Router(); 
+
+router.get(
+  "/",
+  verifyToken,
+  authorizeRoles("doctor"),
+  getDoctorRecords
+);
 
 /**
  * @swagger

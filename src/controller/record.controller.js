@@ -94,3 +94,37 @@ export const getRecords = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+export const getDoctorRecords = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    if (userRole !== "doctor") {
+      return res.status(403).json({ message: "Unauthorized access" });
+    }
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const records = await Record.find({ doctor: userId })
+      .populate("patient", "name email contact")
+      .populate("appointment", "appointment_date appointment_time status")
+      .sort({ "appointment.appointment_date": -1 });
+
+    const enrichedRecords = records.map(record => {
+      const apptDate = new Date(record.appointment.appointment_date);
+      const category = apptDate >= thirtyDaysAgo ? "recent" : "older";
+
+      return {
+        ...record.toObject(),
+        _category: category
+      };
+    });
+
+    return res.status(200).json({ records: enrichedRecords });
+  } catch (error) {
+    console.error("Get doctor records error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};

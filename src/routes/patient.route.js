@@ -24,7 +24,7 @@ const router = express.Router();
  *       403:
  *         description: Unauthorized
  */
-router.get("/", verifyToken, authorizeRoles("admin"), fetchAllPatients);
+router.get("/", verifyToken, authorizeRoles("admin", "doctor"), fetchAllPatients);
 
 /**
  * @swagger
@@ -52,7 +52,7 @@ router.get("/", verifyToken, authorizeRoles("admin"), fetchAllPatients);
 router.get(
   "/:id",
   verifyToken,
-  authorizeRoles("admin", "patient"),
+  authorizeRoles("admin", "patient", "doctor"),
   fetchPatientById
 );
 
