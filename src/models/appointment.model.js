@@ -11,7 +11,8 @@ const appointmentSchema = new mongoose.Schema(
   {
     appointmentId: {
       type: String,
-      unique: true
+      unique: true,
+      required: true,
     },
     doctor: {
       type: mongoose.Schema.Types.ObjectId,
