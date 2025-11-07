@@ -81,7 +81,11 @@ export const getAppointment = async (req, res) => {
 
     // doctor: can view only their assigned appointments
     else if (userRole === "doctor") {
-      appointments = await Appointment.find({ doctor: userId })
+      const query = { doctor: userId };
+      if (patientFilter) {
+        query.patient = patientFilter;  // <-- ADD THIS LINE
+      }
+      appointments = await Appointment.find(query)
         .populate("doctor", "name email specialization")
         .populate("patient", "name email contact age gender address");
     }
