@@ -9,11 +9,6 @@ const Counter = mongoose.model("Counter", counterSchema);
 
 const appointmentSchema = new mongoose.Schema(
   {
-    appointmentId: {
-      type: String,
-      unique: true,
-      required: true,
-    },
     doctor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Doctor",
@@ -44,21 +39,6 @@ const appointmentSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
-// 🔹 Auto-generate formatted appointment ID
-appointmentSchema.pre("save", async function (next) {
-  if (this.isNew) {
-    const counter = await Counter.findByIdAndUpdate(
-      { _id: "appointment" },
-      { $inc: { seq: 1 } },
-      { new: true, upsert: true }
-    );
-
-    const formattedNumber = String(counter.seq).padStart(4, "0");
-    this.appointmentId = `APT-${formattedNumber}`;
-  }
-  next();
-});
 
 const Appointment = mongoose.model("Appointment", appointmentSchema);
 export default Appointment;
