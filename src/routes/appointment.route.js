@@ -69,6 +69,47 @@ router.get(
 
 /**
  * @swagger
+ * /api/appointment/patient/{patientId}:
+ *   get:
+ *     summary: Get past appointments for a specific patient (admin/doctor only)
+ *     tags: [Appointments]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of past appointments
+ */
+router.get(
+  "/patient/:patientId",
+  verifyToken,
+  authorizeRoles("admin", "doctor"),
+  async (req, res) => {
+    try {
+      const { patientId } = req.params;
+
+      const appointments = await Appointment.find({
+        patient: patientId,
+        status: { $nin: ["Pending", "Scheduled"] }, // only past
+      })
+        .populate("doctor", "name email specialization")
+        .sort({ appointment_date: -1 });
+
+      res.status(200).json({ appointments });
+    } catch (error) {
+      console.error("Get patient history error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+/**
+ * @swagger
  * /api/appointment/{id}:
  *   put:
  *     summary: Update an appointment (Patient/Doctor)
