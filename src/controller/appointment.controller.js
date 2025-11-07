@@ -79,18 +79,16 @@ export const getAppointment = async (req, res) => {
         .populate("patient", "name email contact age gender address");
     }
 
-    // doctor: can view only their assigned appointments
+    // doctor: only their appointments
     else if (userRole === "doctor") {
       const query = { doctor: userId };
-      if (patientFilter) {
-        query.patient = patientFilter;  // <-- ADD THIS LINE
-      }
+      if (patientFilter) query.patient = patientFilter;
       appointments = await Appointment.find(query)
         .populate("doctor", "name email specialization")
         .populate("patient", "name email contact age gender address");
     }
 
-    // patient: can view only their own appointments
+    // patient: only their appointments
     else if (userRole === "patient") {
       appointments = await Appointment.find({ patient: userId })
         .populate("doctor", "name email specialization")
@@ -99,7 +97,6 @@ export const getAppointment = async (req, res) => {
       return res.status(403).json({ message: "Invalid role" });
     }
 
-    // auto-update past "Scheduled" appointments to "Completed"
     const now = new Date();
     const updates = [];
 
@@ -108,15 +105,33 @@ export const getAppointment = async (req, res) => {
         `${appointment.appointment_date}T${appointment.appointment_time}`
       );
 
+      // Past scheduled → completed
       if (appointment.status === "Scheduled" && appointmentDateTime < now) {
         appointment.status = "Completed";
+        updates.push(appointment.save());
+      }
+
+      // Past pending → rejected
+      if (appointment.status === "Pending" && appointmentDateTime < now) {
+        appointment.status = "Rejected";
         updates.push(appointment.save());
       }
     }
 
     if (updates.length > 0) await Promise.all(updates);
 
-    return res.status(200).json({ appointments });
+    // refetch updated list so response is current
+    const updatedAppointments = await Appointment.find(
+      userRole === "admin"
+        ? {}
+        : userRole === "doctor"
+        ? { doctor: userId }
+        : { patient: userId }
+    )
+      .populate("doctor", "name email specialization")
+      .populate("patient", "name email contact age gender address");
+
+    return res.status(200).json({ appointments: updatedAppointments });
   } catch (error) {
     console.error("Get appointment error:", error);
     return res.status(500).json({ message: "Server error" });
