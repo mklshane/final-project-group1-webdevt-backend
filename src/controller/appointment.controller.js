@@ -75,7 +75,7 @@ export const getAppointment = async (req, res) => {
     // admin: can view all appointments
     if (userRole === "admin") {
       appointments = await Appointment.find()
-        .populate("doctor", "name email specialization")
+        .populate("doctor", "name email specialization schedule_time")
         .populate("patient", "name email contact age gender address");
     }
 
@@ -86,14 +86,14 @@ export const getAppointment = async (req, res) => {
         query.patient = patientFilter;  // <-- ADD THIS LINE
       }
       appointments = await Appointment.find(query)
-        .populate("doctor", "name email specialization")
+        .populate("doctor", "name email specialization schedule_time")
         .populate("patient", "name email contact age gender address");
     }
 
     // patient: can view only their own appointments
     else if (userRole === "patient") {
       appointments = await Appointment.find({ patient: userId })
-        .populate("doctor", "name email specialization")
+        .populate("doctor", "name email specialization schedule_time")
         .populate("patient", "name email contact age gender address");
     } else {
       return res.status(403).json({ message: "Invalid role" });
