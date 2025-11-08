@@ -1,3 +1,4 @@
+// utils/addLog.js
 import Log from "../models/log.model.js";
 import Doctor from "../models/doctor.model.js";
 import Patient from "../models/patient.model.js";
@@ -7,13 +8,14 @@ export const addLog = async (
   type = "INFO",
   metadata = {},
   createdBy = null,
-  createdByModel = null,
+  createdByModel = null, // <-- keep exactly what the caller gave us
   createdByName = "System"
 ) => {
   try {
     let finalName = createdByName;
-    let finalModel = createdByModel;
+    let finalModel = createdByModel; // <-- do NOT force “Admin”
 
+    // Resolve name only when we have a valid ID + model
     if (createdBy && createdByModel) {
       let user;
       if (createdByModel === "Doctor") {
@@ -21,8 +23,12 @@ export const addLog = async (
       } else if (createdByModel === "Patient") {
         user = await Patient.findById(createdBy).select("name");
       }
+
       if (user) {
         finalName = `${user.name} (${createdByModel})`;
+      } else {
+        // ID exists but user not found → keep the name we already have
+        finalName = createdByName || "Unknown User";
       }
     }
 
@@ -31,7 +37,7 @@ export const addLog = async (
       type,
       metadata,
       createdBy: createdBy || null,
-      createdByModel: createdByModel || "Admin",
+      createdByModel: finalModel, // <-- preserve exact model
       createdByName: finalName,
     });
 
