@@ -16,7 +16,7 @@ const logSchema = new mongoose.Schema(
     },
     createdByModel: {
       type: String,
-      enum: ["Doctor", "Patient", "Admin"],
+      enum: ["Doctor", "Patient", "Admin", "System"],
       required: false,
     },
     createdByName: {
