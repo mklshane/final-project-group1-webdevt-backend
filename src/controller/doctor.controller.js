@@ -80,10 +80,11 @@ export const deleteDoctorAcc = async (req, res) => {
       return res.status(404).json({ message: "Doctor not found" });
     }
 
-    await Doctor.findByIdAndDelete(id);
+    await doctor.deleteOne();
 
     return res.status(200).json({
-      message: "Doctor account deleted successfully",
+      message:
+        "Doctor account and all associated appointments deleted successfully",
       doctor,
     });
   } catch (error) {
