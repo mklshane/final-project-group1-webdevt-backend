@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Appointment from "./appointment.model.js";
 
 const doctorSchema = new mongoose.Schema(
   {
@@ -46,6 +47,20 @@ const doctorSchema = new mongoose.Schema(
     },
   },
   { timestamps: true }
+);
+
+doctorSchema.pre(
+  "deleteOne",
+  { document: true, query: false },
+  async function (next) {
+    try {
+      await Appointment.deleteMany({ doctor: this._id });
+      next();
+    } catch (error) {
+      console.error("Error deleting appointments on doctor delete:", error);
+      next(error);
+    }
+  }
 );
 
 const Doctor = mongoose.model("Doctor", doctorSchema);
