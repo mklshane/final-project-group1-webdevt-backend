@@ -206,48 +206,33 @@ export const logout = (req, res) => {
 export const verifyAuth = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
+    if (!authHeader?.startsWith("Bearer "))
       return res
         .status(401)
         .json({ message: "No token", authenticated: false });
-    }
 
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    let userData;
-    if (decoded.role === "patient") {
-      userData = await Patient.findById(decoded.id).select("-password");
-    } else if (decoded.role === "doctor") {
-      userData = await Doctor.findById(decoded.id).select("-password");
-    } else if (decoded.role === "admin") {
-      userData = { _id: "admin", email: decoded.email, role: "admin" };
-    }
-
-    if (!userData) {
-      return res
-        .status(404)
-        .json({ message: "User not found", authenticated: false });
+    if (decoded.role === "admin") {
+      return res.status(200).json({
+        authenticated: true,
+        user: { _id: "admin", email: decoded.email, role: "admin" },
+        userType: "admin",
+        message: "Token is valid",
+      });
     }
 
     res.status(200).json({
       authenticated: true,
-      user: userData,
+      user: decoded,
       userType: decoded.role,
       message: "Token is valid",
     });
   } catch (error) {
     console.error("Token verification error:", error);
-    if (error.name === "JsonWebTokenError") {
-      return res
-        .status(401)
-        .json({ message: "Invalid token", authenticated: false });
-    }
-    if (error.name === "TokenExpiredError") {
-      return res
-        .status(401)
-        .json({ message: "Token expired", authenticated: false });
-    }
-    res.status(500).json({ message: "Server error", authenticated: false });
+    res
+      .status(401)
+      .json({ message: "Invalid or expired token", authenticated: false });
   }
 };

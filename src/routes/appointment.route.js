@@ -7,6 +7,7 @@ import {
   getAppointment,
   updateAppointment,
 } from "../controller/appointment.controller.js";
+import Appointment from "../models/appointment.model.js";
 
 const router = express.Router();
 
