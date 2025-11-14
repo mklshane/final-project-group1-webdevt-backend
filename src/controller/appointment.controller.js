@@ -1,6 +1,7 @@
 import Appointment from "../models/appointment.model.js"
 import Doctor from "../models/doctor.model.js"
 import Patient from "../models/patient.model.js"
+import Record from "../models/record.model.js"
 
 export const createAppointment = async (req,res) => {
     try {
@@ -218,10 +219,9 @@ export const deleteAppointment = async (req, res) => {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
-    return res
-      .status(200)
-      .json({ message: "Appointment deleted successfully" });
-
+    return res.status(200).json({
+      message: "Appointment and associated medical record deleted successfully",
+    });
   } catch (error) {
     console.error("Delete appointment error:", error);
     return res.status(500).json({ message: "Server error" });

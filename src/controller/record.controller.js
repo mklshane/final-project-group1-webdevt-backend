@@ -153,3 +153,16 @@ export const getDoctorRecords = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+export const editRecord = async (req, res) => {
+  try {
+    const record = await Record.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    ).populate("doctor appointment");
+    res.json({ record });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+}

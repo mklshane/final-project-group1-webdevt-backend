@@ -1,7 +1,7 @@
 import express from "express";
 import verifyToken from "../middleware/verifyToken.js";
 import authorizeRoles from "../middleware/authorizeRoles.js";
-import { addRecord, getRecords, getDoctorRecords } from "../controller/record.controller.js";
+import { addRecord, getRecords, getDoctorRecords, editRecord } from "../controller/record.controller.js";
 
 const router = express.Router(); 
 
@@ -93,5 +93,7 @@ router.get(
   authorizeRoles("patient", "doctor", "admin"),
   getRecords
 );
+
+router.put("/:id", verifyToken, authorizeRoles("doctor"), editRecord);
 
 export default router;

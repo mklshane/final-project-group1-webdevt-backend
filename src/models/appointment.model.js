@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Record from "./record.model";
 
 const counterSchema = new mongoose.Schema({
   _id: { type: String, required: true },
@@ -39,6 +40,16 @@ const appointmentSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+appointmentSchema.pre("findOneAndDelete", async function (next) {
+  try {
+    const query = this.getQuery();
+    await Record.deleteMany({ appointment: query._id });
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 const Appointment = mongoose.model("Appointment", appointmentSchema);
 export default Appointment;

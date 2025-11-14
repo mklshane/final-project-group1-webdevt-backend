@@ -177,6 +177,6 @@ router.put(
  *       404:
  *         description: Appointment not found
  */
-router.delete("/:id", verifyToken, authorizeRoles("admin"), deleteAppointment);
+router.delete("/:id", verifyToken, authorizeRoles("admin", "doctor"), deleteAppointment);
 
 export default router;
