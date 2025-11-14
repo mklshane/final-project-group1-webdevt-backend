@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Record from "./record.model";
+import Record from "./record.model.js";
 
 const counterSchema = new mongoose.Schema({
   _id: { type: String, required: true },
