@@ -60,7 +60,6 @@ export const createAppointment = async (req,res) => {
       return res.status(500).json({ message: "Server error" });
     }
 }
-
 export const getAppointment = async (req, res) => {
   try {
     const userRole = req.user?.role;
@@ -121,7 +120,6 @@ export const getAppointment = async (req, res) => {
 
     if (updates.length > 0) await Promise.all(updates);
 
-    // refetch updated list so response is current
     const updatedAppointments = await Appointment.find(
       userRole === "admin"
         ? {}
@@ -129,7 +127,7 @@ export const getAppointment = async (req, res) => {
         ? { doctor: userId }
         : { patient: userId }
     )
-      .populate("doctor", "name email specialization")
+      .populate("doctor", "name email specialization schedule_time") 
       .populate("patient", "name email contact age gender address");
 
     return res.status(200).json({ appointments: updatedAppointments });
