@@ -1,65 +1,68 @@
 import Appointment from "../models/appointment.model.js"
 import Doctor from "../models/doctor.model.js"
 import Patient from "../models/patient.model.js"
-import Record from "../models/record.model.js"
 
-export const createAppointment = async (req,res) => {
-    try {
-      const {
-        doctor_id,
-        patient_id,
-        appointment_date,
-        appointment_time,
-        notes,
-      } = req.body;
+export const createAppointment = async (req, res) => {
+  try {
+    const { doctor_id, patient_id, appointment_date, appointment_time, notes } =
+      req.body;
 
-      if (!doctor_id || !patient_id || !appointment_date || !appointment_time) {
-        return res.status(400).json({
-          message: "Incomplete data",
-        });
-      }
-
-      const doctor = await Doctor.findById(doctor_id);
-      if (!doctor) {
-        return res.status(404).json({ message: "Doctor not found" });
-      }
-
-      const patient = await Patient.findById(patient_id);
-      if (!patient) {
-        return res.status(404).json({ message: "Patient not found" });
-      }
-
-       const existingAppointment = await Appointment.findOne({
-         doctor: doctor_id,
-         appointment_date,
-         appointment_time,
-       });
-
-       if (existingAppointment) {
-         return res.status(400).json({
-           message:
-             "This doctor already has an appointment at the selected date and time.",
-         });
-       }
-
-      const newAppointment = new Appointment({
-        doctor: doctor_id,
-        patient: patient_id,
-        appointment_date,
-        appointment_time,
-        notes: notes || "",
+    // Validate required fields
+    if (!doctor_id || !patient_id || !appointment_date || !appointment_time) {
+      return res.status(400).json({
+        message: "Incomplete data",
       });
-
-      await newAppointment.save();
-
-      return res
-        .status(201)
-        .json({ message: "Appointment created successfully", newAppointment });
-    } catch (error) {
-      console.error("Create appointment error:", error);
-      return res.status(500).json({ message: "Server error" });
     }
-}
+
+    // Check if doctor exists
+    const doctor = await Doctor.findById(doctor_id);
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    // Check if patient exists
+    const patient = await Patient.findById(patient_id);
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found" });
+    }
+
+    // Check for conflicting ACTIVE appointments only
+    // Cancelled, Rejected, and Completed appointments do NOT block the slot
+    const conflictingAppointment = await Appointment.findOne({
+      doctor: doctor_id,
+      appointment_date,
+      appointment_time,
+      status: { $in: ["Scheduled", "Pending"] }, 
+    });
+
+    if (conflictingAppointment) {
+      return res.status(400).json({
+        message:
+          "This doctor already has an appointment at the selected date and time.",
+      });
+    }
+
+    // Create new appointment
+    const newAppointment = new Appointment({
+      doctor: doctor_id,
+      patient: patient_id,
+      appointment_date,
+      appointment_time,
+      notes: notes || "",
+    });
+
+    await newAppointment.save();
+
+    return res.status(201).json({
+      message: "Appointment created successfully",
+      appointment: newAppointment,
+    });
+  } catch (error) {
+    console.error("Create appointment error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 export const getAppointment = async (req, res) => {
   try {
     const userRole = req.user?.role;
